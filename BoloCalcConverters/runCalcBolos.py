@@ -14,6 +14,7 @@ class runCalcBolos():
     
     def runSim(self, exp_dir):
         import os
+        from sys import platform
         
         print('Running Simulation')
         print('Sit back........')
@@ -24,12 +25,14 @@ class runCalcBolos():
 #############May change depending on what operating system is being used!##################
         
         if platform == 'linux' or platform == 'linux2':
-            !python3 calcBolos.py $exp_dir
+            os.system('python3 calcBolos.py ' + exp_dir)
         elif platform == 'darwin':
-            !python3 calcBolos.py $exp_dir
+            os.system('python3 calcBolos.py ' + exp_dir)
         elif platform == 'win32':
-            !python3.exe calcBolos.py $exp_dir
-          
+            os.system('python3.exe calcBolos.py ' + exp_dir)
+        else:
+            print('Hmm I am not familiar with this operating system')
+         
         return
 
     def runCalcBolos_check(self, exp_dir):
