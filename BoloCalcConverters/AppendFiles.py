@@ -20,7 +20,19 @@ class AppendFiles():
 
         import os
         import pandas as pd
-  
+        
+        '''
+        Reads in a text file to parse data in a dataframe. This dataframe can be written to
+        it's own excel file, or appended to an existing excel file
+        
+        file_name_input: name of file assuming already in the same directory
+        file_name_output: name for the excel file output to be written to some directory
+        writer: the writer object that specifies the excel file or sheet to write to
+        file_path_output: the path to where the excel file will be saved
+        '''
+        
+        
+        #store input as a dataframe
         inputs = pd.read_csv(file_name_input, sep = '|', comment = '#')
         os.chdir(file_path_output)
         inputs.to_excel(writer, sheet_name = file_name_output)
@@ -31,46 +43,72 @@ class AppendFiles():
     ##Convert Inputs Parameters to Excel##
     def InputConvert(self, exp_dir):
 
-        try:
-            print('Converting Inputs to Excel......')
+       
+        print('Converting Inputs to Excel......')
 
-            import os
-            import pandas as pd
-            import subprocess, sys
-            from BoloCalcConverters import TeleCamNames
-            
+        import os,shutil
+        import pandas as pd
+        import subprocess, sys
+        from BoloCalcConverters import TeleCamNames
 
+        '''
+        This module walks through all the config directories in the passed
+        experimental directory and converts them to a master spreadsheet.
+        The master spreadsheet can be modified by the user and mapped back
+        to append the original config text files in the experimental directory 
+        with the AppendInputs module below.
 
-            telescope_names, camera_names = TeleCamNames.TeleCamNames(exp_dir)
+        exp_dir: the experimental directory passed by the interface.
+        '''
 
-            os.mkdir(exp_dir + '/' +  'InputExcelParameters')
-            file_path_output = exp_dir + '/' + 'InputExcelParameters'
-            InputExcel = 'InputExcelParameters.xlsx'
+        telescope_names, camera_names = TeleCamNames.TeleCamNames(exp_dir)
+
+        #try:
+        #    os.mkdir(exp_dir + '/' +  'InputExcelParameters')
+        #except FileExistsError:
+        #    print('Overwriting lastest Input directory')
+        #    shutil.rmtree(exp_dir + '/' + 'InputExcelParameters')
+        #    os.mkdir(exp_dir+'/'+'InputExcelParameters')
+
+        file_path_output = exp_dir# + '/' + 'InputExcelParameters'
+        InputExcel = 'InputExcelParameters.xlsx'
+
+        os.chdir(exp_dir + '/' + 'config')
+
+        with pd.ExcelWriter(InputExcel, engine = 'xlsxwriter') as writer:
+
+            #plotting parameter inputs (hardcoded from LAT model)
+            params = ['band_centers','beam_sizes','f_knees','Cs','alpha_temp',
+               'survey_time','f_sky','ret_after_obs_cuts','non_uniformity_param','ell_max','ell_pivot',
+                      'delta_ell','alpha_pol','NTubes_LF','NTubes_MF','NTubes_UHF','model_num']
+
+            #Hard coded from SO LAT model
+            default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],
+                                                     [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],
+                                                     -3.5,5.,0.4,0.2,0.85,1e4,1000.,5,0.4,1,4,2,0]}
+
+            #store the previous LAT model parameters in a dataframe  and write to the master sheet
+            plot_params = pd.DataFrame(default_values,index=params)
+            os.chdir(exp_dir)# + '/' + 'InputExcelParameters')
+            plot_params.to_excel(writer, sheet_name = 'Atmosphere_Model_Parameters')
 
             os.chdir(exp_dir + '/' + 'config')
-            
-
-            #Try with .rstrip
-            with pd.ExcelWriter(InputExcel, engine = 'xlsxwriter') as writer:
-                os.chdir(exp_dir + '/' + 'config')
-                self.ConfigReader('foregrounds.txt', 'foregrounds', writer, file_path_output)
-                for i in range(len(telescope_names)):
-                    for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + 'config'):
+            self.ConfigReader('foregrounds.txt', 'foregrounds', writer, file_path_output)
+            for i in range(len(telescope_names)):
+                for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + 'config'):
+                    for k in range(len(fileList)):
+                        os.chdir(exp_dir + '/' + telescope_names[i] + '/' + 'config')
+                        self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i], writer, file_path_output)
+                for j in range(len(camera_names[i])):
+                    for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config'):
                         for k in range(len(fileList)):
-                            os.chdir(exp_dir + '/' + telescope_names[i] + '/' + 'config')
-                            self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i], writer, file_path_output)
-                    for j in range(len(camera_names[i])):
-                        for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config'):
-                            for k in range(len(fileList)):
-                                os.chdir(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config')
-                                self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i] + '_' + camera_names[i][j], writer, file_path_output)
-                writer.save()
-                print('Done! Opening file!')
-                print('\n')
-                
-        except FileExistsError:
-            print('You have already converted the input files to excel')
+                            os.chdir(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config')
+                            self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i] + '_' + camera_names[i][j], writer, file_path_output)
+            writer.save()
+            print('Done!')
             print('\n')
+                
+     
         return
 
     def AppendConfigFiles(self, file_name, sheet_name, output_path, output_file_name):
@@ -98,6 +136,15 @@ class AppendFiles():
         import os
         import pandas as pd
         from BoloCalcConverters import TeleCamNames
+        
+        '''
+        This module takes the InputExcelFiles master spreadsheet, which has been
+        appended for a new BoloCalc calculation and maps those back to the original
+        config files that define the simulation parameters. From there, a new BoloCalc
+        simulation can be run. 
+        
+        exp_dir: the experimental directory that contains the InputExcelFiles directory
+        '''
         
         #import the names of the telescopes and cameras from the given directory
         telescope_names, camera_names = TeleCamNames.TeleCamNames(exp_dir)
@@ -148,6 +195,18 @@ class AppendFiles():
     def SaveFiles(self, exp_dir, save_path, save_name, in_or_out):
         import shutil, os
         
+        '''
+        This module allows the user to save the InputExcelFiles folder to another place
+        on their machine in the case where multiple simulation want to be run and the 
+        inputs/outputs are documented for later use. The InputExcelFiles directory
+        is then copied into the path specified by save_path under the name specified
+        by save_name.
+        
+        exp_dir: the experimental directory containing the OutputExcelFiles directory
+        save_path: path on this machine to copy and save the OutputExcelFiles directory
+        save_name: name for the OutputExcelFiles directory to be under
+        '''
+        
         try:
             if not os.path.exists(save_path + '/' + save_name):
                 print('Saving your file to ' + save_path + ' as ' + save_name)
@@ -173,6 +232,18 @@ class AppendFiles():
     def SaveFile_Out(self, exp_dir, save_path, save_name):
         import shutil, os
         
+        '''
+        This module allows the user to save the OutputExcelFiles folder to another place
+        on their machine in the case where multiple simulation want to be run and the 
+        inputs/outputs are documented for later use. The OutputExcelFiles directory
+        is then copied into the path specified by save_path under the name specified
+        by save_name.
+        
+        exp_dir: the experimental directory containing the OutputExcelFiles directory
+        save_path: path on this machine to copy and save the OutputExcelFiles directory
+        save_name: name for the OutputExcelFiles directory to be under
+        '''
+        
         try:
             if not os.path.exists(save_path + '/' + save_name):
                 print('Saving your file to ' + save_path + ' as ' + save_name)
@@ -197,6 +268,16 @@ class AppendFiles():
         import pandas as pd
         import os
         
+        '''
+        This module takes an input dataframe (from conversion modules below)
+        and writes the input to a master sheet specified by writer. 
+        
+        inputs: the input dataframe from conversion modules
+        file_name_out: name of the sheet
+        file_path_out: path to excel sheet
+        writer: master spreadsheet to be appended with input dataframe
+        '''
+        
         os.chdir(file_path_out)
         if type(inputs)==list:
             for i in range(len(inputs)):
@@ -212,102 +293,191 @@ class AppendFiles():
         import os
         import pandas as pd
         
+        '''
+        This module will take in an experimental directory that has calculated the outputs
+        from a BoloCalc simulation. The code will walk through the experimental directory
+        that is passed by the interface and use the conversion modules below to convert all
+        the output files to write all the data to a spreadsheet directory as well as a master
+        spreadsheet containing all the output files named OutputExcelFiles.xlsx. In addition,
+        another speadsheet is created with modifiable parameters that will be mapped to later
+        instrument models within the interface of BoloCalc. The user can walk through all the
+        output files and pick what parameters are interesting for later models. 
+        
+        exp_dir: the experimental directory containing the standard BoloCalc simulation files.
+        It is assumed that the directory has run through a BoloCalc simulation calculation.
+        '''
+        
+        #This calls the module TeleCamNames, which walks through the directory and stores
+        #lists containing the telescope and camera names
         telescope_names, camera_names = TeleCamNames.TeleCamNames(exp_dir)
         
-        try:
-            print('Converting Outputs to Excel. If a warning pops up do not fear.')
+        #error handling for if the files have already been stored
+      
+        print('Converting Outputs to Excel. If a warning pops up do not fear.')
 
-            #loop thru camera files to extract output files
-            OutputExcel = 'OutputExcelFiles.xlsx'
-            path_in = 0
-            path_out = 0
-            os.mkdir(exp_dir + '/' + 'OutputExcelFiles')
-            
-            with pd.ExcelWriter(OutputExcel, engine = 'xlsxwriter') as writer:
-                #plotting parameter inputs
+        #loop thru camera files to extract output files
+
+        #master spreadsheet name
+        OutputExcel = 'OutputExcelFiles.xlsx'
+
+        #instantiating variables for loop
+        path_in = 0
+        path_out = 0
+
+        #get sensitivities from LAT output files
+        os.chdir(exp_dir + '/' + telescope_names[0])
+
+        f = open('sensitivity.txt','r')
+        f_read = f.readlines()
+
+        col_header = f_read[0].split('|')
+        for i in range(len(col_header)):
+            col_header[i] = col_header[i].strip(' ')
+
+
+        sens_frame = pd.read_csv('sensitivity.txt',sep='|',comment='-',skiprows=[0,1,2,-1],names=col_header)
+
+        sens_list = list(sens_frame['Array NET_CMB'])
+        for i in range(len(sens_list)):
+            sens_list[i] = sens_list[i].rstrip(' +/')
+            sens_list[i] = sens_list[i].lstrip(' ')
+            sens_list[i] = float(sens_list[i])
+        sens_list.pop(-1)
+
+        #make directory to store spreadsheets within the experimental directory
+        #try:
+        #    os.mkdir(exp_dir + '/' + 'OutputExcelFiles')
+        #except FileExistsError:
+        #    print('Overwriting latest Output Directory')
+        #    shutil.rmtree(exp_dir + '/' + 'OutputExcelFiles')
+        #    os.mkdir(exp_dir + '/' + 'OutputExcelFiles')
+
+        #spreadsheet writer for master spreadsheet
+        with pd.ExcelWriter(OutputExcel, engine = 'xlsxwriter') as writer:
+
+            ####################
+            try:
+                #read in excel sheet with parameters
+                os.chdir(exp_dir)# + '/' + 'InputExcelParameters')
+                input_model_frame = pd.read_excel('InputExcelParameters.xlsx',sheet_name='Atmosphere_Model_Parameters')
+                params = list(input_model_frame.iloc[:,0])
+                param_values = list(input_model_frame['LAT Model Parameters'])
+
+
+
+                #add sensitivities
+                params.append('Sensitivities')
+                param_values.append(sens_list)
+
+                param_values = {'LAT Model Parameters':param_values}
+                #sens_row = pd.DataFrame(data={'LAT Model Parameters':[[48.,24.,5.4,6.7,15.,36.]]},index=['Sensitivities'])
+                #input_model_frame = input_model_frame.append(sens_row,ignore_index=False)
+                #frames = [input_model_frame,sens_row]
+
+                #plot_params = pd.concat(frames)
+                plot_params = pd.DataFrame(param_values,index=params)
+            ####################
+            except NameError:
+                #plotting parameter inputs (hard coded from LAT model)
                 params = ['band_centers','beam_sizes','Sensitivities','f_knees','Cs','alpha_temp',
                    'survey_time','f_sky','ret_after_obs_cuts','non_uniformity_param','ell_max','ell_pivot',
-                          'delta_ell','alpha_pol','NTubes_LF','NTubes_MF','NTubes_UHF']
-                
-                default_values = {'Plotting Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],[48.,24.,5.4,6.7,15.,36.],
+                          'delta_ell','alpha_pol','NTubes_LF','NTubes_MF','NTubes_UHF','model_num']
+
+                #Hard coded from LAT model
+                default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],[48.,24.,5.4,6.7,15.,36.],
                                                          [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],
-                                                         -3.5,5.,0.4,0.2,0.85,1e4,1000.,5,0.4,1,4,2]}
+                                                         -3.5,5.,0.4,0.2,0.85,1e4,1000.,5,0.4,1,4,2,0]}
+
+                #store the previous LAT model parameters in a dataframe  and write to the master sheet
                 plot_params = pd.DataFrame(default_values,index=params)
-                os.chdir(exp_dir + '/' + 'OutputExcelFiles')
-                plot_params.to_excel(writer, sheet_name = 'N_ell_Plotting_Parameters')
-                
-                for i in range(len(telescope_names)):
-                    os.mkdir(exp_dir + '/' + 'OutputExcelFiles'+ '/' + telescope_names[i])
-                    for j in range(len(camera_names[i])):
-                        #Directory to store filter by camera
-                        os.mkdir(exp_dir + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j])
-                        for dirName, subdirList, filelist in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]):
-                            for k in range(len(filelist)):
-                                if filelist[k] == 'output.txt':
-                                    path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
-                                    name_in = 'output.txt'
-                                    name_out = 'output' + '_' + camera_names[i][j] + '.xls'
-                                    path_out = exp_dir + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
-                                    data = self.ConvertOuttoExcel(path_in, path_out, name_in, name_out)
-                                    path_out = exp_dir + '/' + 'OutputExcelFiles'
-                                    self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
-                                    
-                                elif filelist[k] == 'optical_power.txt':
-                                    path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
-                                    name_in = 'optical_power.txt'
-                                    name_out = 'optical_power' + '_' + camera_names[i][j] + '.xls'
-                                    path_out = exp_dir +  '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
-                                    data = self.ConvertOptPowtoExcel(path_in, path_out, name_in, name_out)
-                                    path_out = exp_dir + '/' + 'OutputExcelFiles'
-                                    self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
-                                    
-                #Convert Sensitivity output files
-                for dirName, subdirList, filelist in os.walk(exp_dir):
+
+            os.chdir(exp_dir)# + '/' + 'OutputExcelFiles')
+            plot_params.to_excel(writer, sheet_name = 'N_ell_Plotting_Parameters')
+
+            #Loop through all the telescope and camera directories to convert output files
+            for i in range(len(telescope_names)):
+                #os.mkdir(exp_dir + '/' + 'OutputExcelFiles'+ '/' + telescope_names[i])
+                for j in range(len(camera_names[i])):
+                    #Directory to store filter by camera
+                    #os.mkdir(exp_dir + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j])
+                    for dirName, subdirList, filelist in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]):
+                        for k in range(len(filelist)):
+                            if filelist[k] == 'output.txt':
+                                path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
+                                name_in = 'output.txt'
+                                name_out = 'output' + '_' + camera_names[i][j] + '.xls'
+                                path_out = exp_dir# + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
+                                data = self.ConvertOuttoExcel(path_in, path_out, name_in, name_out)
+                                path_out = exp_dir# + '/' + 'OutputExcelFiles'
+                                self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
+
+                            elif filelist[k] == 'optical_power.txt':
+                                path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
+                                name_in = 'optical_power.txt'
+                                name_out = 'optical_power' + '_' + camera_names[i][j] + '.xls'
+                                path_out = exp_dir# +  '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
+                                data = self.ConvertOptPowtoExcel(path_in, path_out, name_in, name_out)
+                                path_out = exp_dir# + '/' + 'OutputExcelFiles'
+                                self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
+
+            #Loop through and convert Sensitivity output files
+            for dirName, subdirList, filelist in os.walk(exp_dir):
+                for k in range(len(filelist)):
+                    if filelist[k] == 'sensitivity.txt':
+                        path_in = exp_dir
+                        path_out = exp_dir# + '/' + 'OutputExcelFiles'
+                        name_in = 'sensitivity.txt'
+                        name_out = 'sensitivity.xls'
+                        data = self.ConvertSensitivitytoExcel(path_in, path_out, name_in, name_out, 0)
+                        self.WritetoSheet(data, name_in.rstrip('.txt'), path_out, writer)
+
+            for i in range(len(telescope_names)):
+                for dirName, subdirList, filelist in os.walk(exp_dir + '/' + telescope_names[i]):
                     for k in range(len(filelist)):
                         if filelist[k] == 'sensitivity.txt':
-                            path_in = exp_dir
-                            path_out = exp_dir + '/' + 'OutputExcelFiles'
+                            path_in = exp_dir + '/' + telescope_names[i]
+                            path_out = exp_dir# +  '/' + 'OutputExcelFiles' + '/' + telescope_names[i]
                             name_in = 'sensitivity.txt'
-                            name_out = 'sensitivity.xls'
+                            name_out = 'sensitivity' + '_' + telescope_names[i] + '.xls'
                             data = self.ConvertSensitivitytoExcel(path_in, path_out, name_in, name_out, 0)
-                            self.WritetoSheet(data, name_in.rstrip('.txt'), path_out, writer)
-                            
-                for i in range(len(telescope_names)):
-                    for dirName, subdirList, filelist in os.walk(exp_dir + '/' + telescope_names[i]):
+                            path_out = exp_dir# + '/' + 'OutputExcelFiles'
+                            self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
+                for j in range(len(camera_names[i])):
+                    for dirName, subdirList, filelist in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]):
                         for k in range(len(filelist)):
                             if filelist[k] == 'sensitivity.txt':
-                                path_in = exp_dir + '/' + telescope_names[i]
-                                path_out = exp_dir +  '/' + 'OutputExcelFiles' + '/' + telescope_names[i]
+                                path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
+                                path_out = exp_dir# + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
                                 name_in = 'sensitivity.txt'
-                                name_out = 'sensitivity' + '_' + telescope_names[i] + '.xls'
-                                data = self.ConvertSensitivitytoExcel(path_in, path_out, name_in, name_out, 0)
-                                path_out = exp_dir + '/' + 'OutputExcelFiles'
+                                name_out = 'sensitivity' + '_' + telescope_names[i] + '_' + camera_names[i][j] + '.xls'
+                                data = self.ConvertSensitivitytoExcel(path_in, path_out, name_in, name_out, 1)
+                                path_out = exp_dir# + '/' + 'OutputExcelFiles'
                                 self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
-                    for j in range(len(camera_names[i])):
-                        for dirName, subdirList, filelist in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]):
-                            for k in range(len(filelist)):
-                                if filelist[k] == 'sensitivity.txt':
-                                    path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
-                                    path_out = exp_dir + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
-                                    name_in = 'sensitivity.txt'
-                                    name_out = 'sensitivity' + '_' + telescope_names[i] + '_' + camera_names[i][j] + '.xls'
-                                    data = self.ConvertSensitivitytoExcel(path_in, path_out, name_in, name_out, 1)
-                                    path_out = exp_dir + '/' + 'OutputExcelFiles'
-                                    self.WritetoSheet(data, name_out.rstrip('.xls'), path_out, writer)
-                                    
-            
-                
-                
-            print('Done!')
-            print('\n')
-        except FileExistsError:
-            print('You have already converted the outputs to excel')
-            print('\n')
+
+
+
+
+        print('Done!')
+        print('\n')
+        
         return
 
     def ConvertOuttoExcel(self, file_path_input,file_path_output,file_name_input,file_name_output):
         import os
         import pandas as pd
+        
+        '''
+        The module to convert Monte Carlo simulation outputs to output.txt to a spreadsheet. Not much 
+        parsing or formattig options need to be taken into account for these outputs since the formatting
+        is more or less self expalanatory. The output spreadsheet contains a | deliminator to separate the
+        simulated frequency bands in the output files. The dataframe is returned so it can be written
+        to the master spreadsheet.
+        
+        file_path_input: the path to the directory containing output.txt
+        file_path_output: the path to the directory to save the converted spreadsheet
+        file_name_input: the name of the input file to be converted (output.txt)
+        file_name_output: the name the converted excel file will be under (output.xls)
+        '''
         
         #Change directory to whereever the input file is
         os.chdir(file_path_input)
@@ -318,7 +488,9 @@ class AppendFiles():
 
         #Save file in desired directory as desired format
         os.chdir(file_path_output)
-        data.to_excel(file_name_output)
+        
+        #If want to write to own excel sheet
+        #data.to_excel(file_name_output)
 
         return data
 
@@ -327,6 +499,19 @@ class AppendFiles():
         import os
         import pandas as pd
         import decimal as Decimal
+        
+        '''
+        This module will take an optical_power.txt input and convert it to an excel spreadsheet. The module
+        returns the parsed dataframe so that it can be written to a master spreadsheet. The commented out
+        code is the additional format option that is not necessarily useful. It parses the columns with the
+        number +/- (number, number) format and appends the dataframe with a parsed version of the dataframe
+        with each number in separate columns. 
+        
+        file_path_input: the path to the directory containing optical_power.txt
+        file_path_output: the path to the directory to save the converted spreadsheet
+        file_name_input: the name of the input file to be converted (optical_power.txt)
+        file_name_output: the name the converted excel file will be under (optical_power.xls)
+        '''
         
         
         #Change directory to where the input file is              
@@ -388,6 +573,7 @@ class AppendFiles():
 
         #The next couple blocks parses the strings in the format '0.00 +/- (0.00 , 0.00)'
         #Separating so the individual numbers can be used for data analysis
+        '''
         new = d_cam[col_header[1]].str.split()
 
         d_cam['Power from Sky'] = 1
@@ -422,7 +608,9 @@ class AppendFiles():
 
         reordered_columns = ['Element', 'Power from Sky', 'UpLim in Sky Power', 'LowLim in Sky Power', 'Power to Detect', 'UpLim in Detected Power', 'LowLim in Detected Power', 'Cumulative Eff', 'UpLim in Cumulative Eff', 'LowLim in Cumulative Eff']     
         d_cam = d_cam[reordered_columns] 
+        '''
 
+        
         #Write each camera to a new sheet
         d_cam_sep = [0 for i in range(num_cams)] 
         for i in range(0,num_cams):
@@ -432,9 +620,10 @@ class AppendFiles():
         os.chdir(file_path_output)
 
         #Write converted dataframe to excel with each camera in a separate sheet.
-        with pd.ExcelWriter(file_name_output) as writer:
-            for i in range(0,len(d_cam_sep)):
-                d_cam_sep[i].to_excel(writer,sheet_name='Camera ' + str(i+1))
+        #If want to write to own excel file
+        #with pd.ExcelWriter(file_name_output) as writer:
+        #    for i in range(0,len(d_cam_sep)):
+        #        d_cam_sep[i].to_excel(writer,sheet_name='Camera ' + str(i+1))
 
         #Close the text file reader
         f.close() 
@@ -447,7 +636,22 @@ class AppendFiles():
         import pandas as pd
         import decimal as Decimal
         
+        '''
+        This module will walk through the multiple formats of the different sensitivity files BoloCalc will output.
+        With choose equal to 0, the code walks thru the compilation sensitivity files in the experiment directory.
+        With choose being 1, the code will walk thru the individual camera sensitivity files as the deliminator
+        for the text file is not homogenous and requires a little more massaging. The module returns the dataframe
+        that has been created so it can be written to the master spreadsheet.
         
+        file_path_input: the path to the directory containing the sensitivity file
+        file_path_output: the path to where the sensitivity file should be saved to 
+        file_name_input: the name of the file to be converted to excel (sensitivity.txt)
+        file_name_output: the name of the excel sheet will be saved under (sensitivity.xls)
+        choose: choosing which format of sensitivity file is converted to excel
+        '''
+        
+        
+        #if want to convert experiment sensitivity files
         if choose == 0:
             os.chdir(file_path_input)
             f = open(file_name_input,'r')
@@ -460,9 +664,11 @@ class AppendFiles():
 
             data = pd.read_csv(file_name_input,sep='|',skiprows=lambda x: x % 2 !=0,names=col_header)
             data = data.drop(data.index[0:2])
-
-
-
+            
+            
+            #additional format option to parse the number +/- (number,number) format and separate
+            #into different columns
+            '''
             new = data[col_header[2]].str.split()
 
             data['Array NET_CMB'] = 1
@@ -508,10 +714,15 @@ class AppendFiles():
                 reordered_header = ['Array NET_RJ', 'UpLim in Array NET_RJ', 'LowLim in Array NET_RJ', 'CMB Map Depth', 'UpLim in CMB Map Depth', 'LowLim in CMB Map Depth', 'RJ Map Depth', 'UpLim in RJ Map Depth', 'LowLim in RJ Map Depth']
 
             data = data[reordered_header]
-
-            os.chdir(file_path_output)
-            data.to_excel(file_name_output)
+            '''
             
+            #change directory looking at to where to save the converted excel file
+            os.chdir(file_path_output)
+            
+            #If want to write to own excel file
+            #data.to_excel(file_name_output)
+           
+        #if want to convert camera sensitivity files
         if choose == 1:
             os.chdir(file_path_input)
             
@@ -526,8 +737,21 @@ class AppendFiles():
             data = pd.read_csv(file_name_input,sep='|',skiprows=lambda x: x % 2 !=0,names=col_header)
             data = data.drop(data.index[0:2])
             
+            #shift third row values to correct columns (deliminator not homogenous)
+            last_index=-1
+            data.iloc[last_index]['Array NET_CMB'] = data.iloc[last_index]['Optical Power']
+            data.iloc[last_index]['Optical Power'] = ''
+            data.iloc[last_index]['Array NET_RJ'] = data.iloc[last_index]['Telescope Temp']
+            data.iloc[last_index]['Telescope Temp'] = ''
+            data.iloc[last_index]['CMB Map Depth'] = data.iloc[last_index]['Photon NEP']
+            data.iloc[last_index]['Photon NEP'] = ''
+            data.iloc[last_index]['RJ Map Depth'] = data.iloc[last_index]['Bolometer NEP']
+            data.iloc[last_index]['Bolometer NEP'] = ''
+            
             os.chdir(file_path_output)
-            data.to_excel(file_name_output)
+            
+            #If want to write to own excel file
+            #data.to_excel(file_name_output)
 
         return data
     
