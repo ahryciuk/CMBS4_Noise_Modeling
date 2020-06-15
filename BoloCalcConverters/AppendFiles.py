@@ -153,7 +153,7 @@ class AppendFiles():
             print('Appending the Input Config Text Files')
 
             #InputExcelParameters Path
-            input_path = exp_dir + '/' + 'InputExcelParameters'
+            input_path = exp_dir# + '/' + 'InputExcelParameters'
             
             #Change the directory path to where the inputs have been appended
             os.chdir(input_path)
