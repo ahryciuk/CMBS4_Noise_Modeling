@@ -85,7 +85,8 @@ class AppendFiles():
             #Hard coded from SO LAT model
             default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],
                                                      [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],
-                                                     -3.5,5.,0.4,0.2,0.85,1e4,1000.,5,0.4,1,4,2,0]}
+                                                     [-3.5,-3.5,-3.5,-3.5,-3.5,-3.5],5.,0.4,0.2,0.85,1e4,
+                                                      [1000.,1000.,1000.,1000.,1000.,1000.],5,[0.4,0.4,0.4,0.4,0.4,0.4],1,4,2,0]}
 
             #store the previous LAT model parameters in a dataframe  and write to the master sheet
             plot_params = pd.DataFrame(default_values,index=params)
