@@ -95,16 +95,35 @@ class AppendFiles():
 
             os.chdir(exp_dir + '/' + 'config')
             self.ConfigReader('foregrounds.txt', 'foregrounds', writer, file_path_output)
+       
+            #Telescope Directories#
             for i in range(len(telescope_names)):
                 for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + 'config'):
                     for k in range(len(fileList)):
-                        os.chdir(exp_dir + '/' + telescope_names[i] + '/' + 'config')
-                        self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i], writer, file_path_output)
+                        if os.path.exists(exp_dir + '/' + telescope_names[i] + '/config/Dist/' + fileList[k]):
+                            pass
+                        else:
+                            if fileList[k] == 'telescope.txt':
+                                os.chdir(exp_dir + '/' + telescope_names[i] + '/' + 'config')
+                                self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i], writer, file_path_output)
+                
+                #Camera Directories# 
                 for j in range(len(camera_names[i])):
                     for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config'):
                         for k in range(len(fileList)):
-                            os.chdir(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config')
-                            self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i] + '_' + camera_names[i][j], writer, file_path_output)
+                            if os.path.exists(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/config/Dist/Detectors/' + fileList[k]):
+                                pass
+                            elif os.path.exists(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/config/Dist/Optics/' + fileList[k]):
+                                pass
+                            elif os.path.exists(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/config/Bands/Detectors/' + fileList[k]):
+                                pass
+                            elif os.path.exists(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/config/Bands/Optics/' + fileList[k]):
+                                pass
+                            else:
+                                if fileList[k] == 'optics.txt' or fileList[k] == 'camera.txt' or fileList[k] == 'channels.txt':
+                                    os.chdir(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config')
+                                    self.ConfigReader(fileList[k], fileList[k].rstrip('.txt') + '_' + telescope_names[i] + '_' + camera_names[i][j], writer, file_path_output)
+                            
             writer.save()
             print('Done!')
             print('\n')
@@ -131,7 +150,7 @@ class AppendFiles():
 
     
 
-    ##Function to walk through directory##
+##Function to walk through directory##
     def AppendInputs(self, exp_dir):
         
         import os
@@ -167,19 +186,21 @@ class AppendFiles():
             for i in range(len(telescope_names)):
                 for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + 'config'):
                     for k in range(len(fileList)):
-                        output_file_name = fileList[k]
-                        output_path = exp_dir + '/' + telescope_names[i] + '/' + 'config'
-                        sheet_name = fileList[k].rstrip('.txt') + '_' + telescope_names[i]
-                        os.chdir(input_path)
-                        self.AppendConfigFiles(file_name, sheet_name, output_path, output_file_name)
+                        if fileList[k] == 'telescopt.txt':
+                            output_file_name = fileList[k]
+                            output_path = exp_dir + '/' + telescope_names[i] + '/' + 'config'
+                            sheet_name = fileList[k].rstrip('.txt') + '_' + telescope_names[i]
+                            os.chdir(input_path)
+                            self.AppendConfigFiles(file_name, sheet_name, output_path, output_file_name)
                 for j in range(len(camera_names[i])):
                     for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config'):
                         for k in range(len(fileList)):
-                            output_file_name = fileList[k]
-                            output_path = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config'
-                            sheet_name = fileList[k].rstrip('.txt') + '_' + telescope_names[i] + '_' + camera_names[i][j]
-                            os.chdir(input_path)
-                            self.AppendConfigFiles(file_name, sheet_name, output_path, output_file_name)
+                            if fileList[k] == 'optics.txt' or fileList[k] == 'camera.txt' or fileList[k] == 'channels.txt':
+                                output_file_name = fileList[k]
+                                output_path = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j] + '/' + 'config'
+                                sheet_name = fileList[k].rstrip('.txt') + '_' + telescope_names[i] + '_' + camera_names[i][j]
+                                os.chdir(input_path)
+                                self.AppendConfigFiles(file_name, sheet_name, output_path, output_file_name)
 
             print('Done!')
             print('\n')
