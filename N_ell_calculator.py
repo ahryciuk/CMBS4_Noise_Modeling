@@ -105,22 +105,48 @@ def S4_noise(band_centers=[27.,39.,93.,145.,225.,280.], beam_sizes=[7.4,5.1,2.2,
     #AN_T_cross.append( r_atm * np.sqrt(AN_T[4]*AN_T[5])*np.exp( (ell*(ell+1)/2.)*(LA_beams[4]**2. + LA_beams[5]**2.)) )
    
     N_ell_T_LA = {}
+    
     #allow margin for small perturbation in central frequencies
-    corr_freq = [27.,93.,225.]
+    #corr_freq = [27., 93., 225.]
+    LF1,LF2,LF3,MF1,MF2,UHF1,UHF2 = 0,0,0,0,0,0,0
+    for freq in band_centers:
+        if freq < 24 and freq > 18:
+            LF1 = freq
+        elif freq < 30 and freq > 25:
+            LF2 = freq
+        elif freq < 42 and freq > 35:
+            LF3 = freq
+        elif freq < 96 and freq > 84:
+            MF1 = freq
+        elif freq < 156 and freq > 144:
+            MF2 = freq
+        elif freq < 226 and freq > 214:
+            UHF1 = freq
+        elif freq < 286 and freq > 274:
+            UHF2 = freq
+            
+    corr_freq = {LF1:LF1,LF2:LF3,LF3:LF2,MF1:MF2,MF2:MF1,UHF1:UHF2,UHF2:UHF1}
+            
     for freq1 in band_centers:
         for freq2 in band_centers:
             i = band_centers.index(freq1)
             j = band_centers.index(freq2)
-            if i == j:
+            if freq1 == freq2:
                 N_ell_T_LA[(freq1,freq2)] = (Weights[i]**2.*A_SR + AN_T[i]) * np.exp( ell*(ell+1) * LA_beams[i]**2. )
       
-            elif j == i+1:
-                if freq1 in corr_freq:
-                    N_ell_T_LA[(freq1,freq2)] = r_atm * np.sqrt(AN_T[i]*AN_T[j]) * np.exp( (ell*(ell+1)/2.)*(LA_beams[i]**2. + LA_beams[j]**2.) )
+            else:
+                if freq2 is corr_freq[freq1]:
+                    N_ell_T_LA[(freq1,freq2)] = r_atm * np.sqrt(AN_T[i]*AN_T[j]) * np.exp( (ell*(ell+1))*(LA_beams[i]**2. + LA_beams[j]**2.) )
                 else:
                     N_ell_T_LA[(freq1,freq2)] = np.zeros(len(ell))
-            else:
-                N_ell_T_LA[(freq1,freq2)] = np.zeros(len(ell))
+                    
+#            elif j == i+1:
+#                if freq1 in corr_freq:
+#                    N_ell_T_LA[(freq1,freq2)] = r_atm * np.sqrt(AN_T[i]*AN_T[j]) * np.exp( (ell*(ell+1))*(LA_beams[i]**2. + #LA_beams[j]**2.) )
+#                else:
+#                    N_ell_T_LA[(freq1,freq2)] = np.zeros(len(ell))
+#            else:
+#                N_ell_T_LA[(freq1,freq2)] = np.zeros(len(ell))
                 
 
     
@@ -195,16 +221,22 @@ def S4_noise(band_centers=[27.,39.,93.,145.,225.,280.], beam_sizes=[7.4,5.1,2.2,
         for freq2 in band_centers:
             i = band_centers.index(freq1)
             j = band_centers.index(freq2)
-            if i == j:
+            if freq1 == freq2:
                 N_ell_P_LA[(freq1,freq2)] = N_ell_P[i]
-            elif j == i+1:
-                if freq1 in corr_freq:
-                    #N_ell_P_LA[(freq1,freq2)] = r_atm * np.sqrt(N_ell_P_atm[i] * N_ell_P_atm[j])*np.exp( (ell*(ell+1)/2.) * (LA_beams[i]**2. + LA_beams[j]**2.) )
-                    N_ell_P_LA[(freq1,freq2)] = r_atm * np.sqrt((Weights[i] * np.sqrt(2))**2. * A_SR *AN_P[i] * (Weights[i] * np.sqrt(2))**2. * A_SR * AN_P[j])*np.exp( (ell*(ell+1)/2.) * (LA_beams[i]**2. + LA_beams[j]**2.) )
+            else:
+                if freq2 is corr_freq[freq1]:
+                    N_ell_P_LA[(freq1,freq2)] = r_atm * np.sqrt( N_ell_P[i] * N_ell_P[j] )
                 else:
                     N_ell_P_LA[(freq1,freq2)] = np.zeros(len(ell))
-            else:
-                N_ell_P_LA[(freq1,freq2)] = np.zeros(len(ell))
+#            elif j == i+1:
+#                if freq1 in corr_freq:
+                    #N_ell_P_LA[(freq1,freq2)] = r_atm * np.sqrt(N_ell_P_atm[i] * N_ell_P_atm[j])*np.exp( (ell*(ell+1)/2.) * (LA_beams[i]**2. + LA_beams[j]**2.) )
+                    #N_ell_P_LA[(freq1,freq2)] = r_atm * np.sqrt((Weights[i] * np.sqrt(2))**2. * A_SR *AN_P[i] * (Weights[i] * np.sqrt(2))**2. * A_SR * AN_P[j])*np.exp( (ell*(ell+1)) * (LA_beams[i]**2. + LA_beams[j]**2.) )
+#                    N_ell_P_LA[(freq1,freq2)] = r_atm * np.sqrt( N_ell_P[i] * N_ell_P[j] )
+#                else:
+#                    N_ell_P_LA[(freq1,freq2)] = np.zeros(len(ell))
+#            else:
+#                N_ell_P_LA[(freq1,freq2)] = np.zeros(len(ell))
          
   
     return(ell, N_ell_T_LA, N_ell_P_LA, Map_white_noise_levels)

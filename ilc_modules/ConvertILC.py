@@ -52,7 +52,7 @@ def calc_cls(nl_dic, bl_dic, ell, band_centers, cwd):
 
 
     #ilc weights
-    lmin = ell[0]
+    lmin = el[0]
     weights_dic = {}
     for which_spec in which_spec_arr:
         weights_dic[which_spec] = ilc.get_multipole_weightsarr(final_comp, band_centers, el, cl_dic[which_spec], lmin, 
@@ -68,7 +68,7 @@ def calc_cls(nl_dic, bl_dic, ell, band_centers, cwd):
                                                                               freqcalib_fac = freqcalib_fac, 
                                                                               return_weights = 0)
 
-    return cl_dic, weights_dic, cl_residual
+    return el, cl_dic, weights_dic, cl_residual
 
 def convert_params_excel(exp_dir, cwd):
     
@@ -82,8 +82,18 @@ def convert_params_excel(exp_dir, cwd):
     
     return 
 
-
-
+def convert_fisher_params_excel(exp_dir,cwd,params_file='params_planck_r_0.0_2015_cosmo_lensed_LSS_JM.txt'):
+    
+    #params_file = 'params.ini'
+    
+    os.chdir(cwd + '/ilc_modules')
+    params = pd.read_csv(params_file,comment='#',sep='=',names=['Parameter','Value'])
+    
+    os.chdir(exp_dir)
+    params.to_excel('fisher_params.xlsx') 
+    
+    return
+         
 def append_params(exp_dir, cwd):
     
     os.chdir(exp_dir)
@@ -96,7 +106,16 @@ def append_params(exp_dir, cwd):
     
     return
 
-
-
+def append_fisher_params(exp_dir,cwd,params_file='params_planck_r_0.0_2015_cosmo_lensed_LSS_JM.txt'):
+    
+    os.chdir(exp_dir)
+    append_params = pd.read_excel('fisher_params.xlsx')
+    
+    os.chdir(cwd + '/ilc_modules')
+    append_params.to_csv(params_file,sep='=',columns=['Parameter','Value'],index=False)
+   
+    print('Done!')
+    
+    return
 
 

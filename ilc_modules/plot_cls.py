@@ -46,7 +46,11 @@ def plot_cls(param_dict, freqarr, el, cwd, cl_residual, weights_dic, nl_dic):
     subplots_adjust(wspace=0.1, hspace = 0.1)
     xmin, xmax = 20, 7000
     #first plot weights
-    colordic = {27:'indigo', 39:'blue', 93: 'royalblue', 145: 'darkgreen', 225: 'goldenrod', 280: 'darkred'}
+    colors = ['indigo','blue','royalblue','darkgreen','goldenrod','darkred']
+    colordic = {}
+    for freq in freqarr:
+        i = freqarr.index(freq)
+        colordic[freq] = colors[i]
     rspan, cspan = 2, 1
     curr_row = 0
     for cntr, which_spec in enumerate( which_spec_arr ):
