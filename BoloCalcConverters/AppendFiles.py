@@ -9,14 +9,8 @@ class AppendFiles():
         
         return
 
-    def printsome(self):
-        
-        print('Works')
-        
-        return
-    
     ##ConfigReader##
-    def ConfigReader(self, file_name_input, file_name_output, writer, file_path_output):
+    def ConfigReader(self, file_name_input, file_name_output, writer, file_path_output, sep_p=None):
 
         import os
         import pandas as pd
@@ -33,7 +27,11 @@ class AppendFiles():
         
         
         #store input as a dataframe
-        inputs = pd.read_csv(file_name_input, sep = '|', comment = '#')
+        if sep_p is None:
+            inputs = pd.read_csv(file_name_input, sep = '|', comment = '#',error_bad_lines=False)
+        else:
+            inputs = pd.read_csv(file_name_input, sep = sep_p, comment = '#',error_bad_lines=False)
+            
         os.chdir(file_path_output)
         inputs.to_excel(writer, sheet_name = file_name_output)
 
@@ -80,13 +78,10 @@ class AppendFiles():
             #plotting parameter inputs (hardcoded from LAT model)
             params = ['band_centers','beam_sizes','f_knees','Cs','alpha_temp',
                'survey_time','f_sky','ret_after_obs_cuts','non_uniformity_param','ell_max','ell_pivot',
-                      'delta_ell','alpha_pol','NTubes_LF','NTubes_MF','NTubes_UHF','model_num']
+                      'delta_ell','alpha_pol','NTubes','model_num']
 
             #Hard coded from SO LAT model
-            default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],
-                                                     [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],
-                                                     [-3.5,-3.5,-3.5,-3.5,-3.5,-3.5],5.,0.4,0.2,0.85,1e4,
-                                                      [1000.,1000.,1000.,1000.,1000.,1000.],5,[0.4,0.4,0.4,0.4,0.4,0.4],1,4,2,0]}
+            default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9], [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],[-3.5,-3.5,-3.5,-3.5,-3.5,-3.5], 5., 0.4, 0.2,0.85,1e4,[1000.,1000.,1000.,1000.,1000.,1000.],1,[-0.4,-0.4,-0.4,-0.4,-0.4,-0.4],[1,1,1,1,1,1],1]}
 
             #store the previous LAT model parameters in a dataframe  and write to the master sheet
             plot_params = pd.DataFrame(default_values,index=params)
@@ -150,7 +145,7 @@ class AppendFiles():
 
     
 
-##Function to walk through directory##
+    ##Function to walk through directory##
     def AppendInputs(self, exp_dir):
         
         import os
@@ -180,7 +175,7 @@ class AppendFiles():
             file_name = 'InputExcelParameters.xlsx' 
             
             #Append the foregrounds text file 
-            self.AppendConfigFiles(file_name, 'foregrounds', '/mnt/c/Users/12622/Desktop/CMB_Research/S4/Noise_Modelling/V3_baseline_2/V3_baseline_2/config', 'foregrounds.txt')
+            self.AppendConfigFiles(file_name, 'foregrounds', 'config', 'foregrounds.txt')
 
             #Loop through all the telescopes and camera directories and append each text file from the corresponding sheet
             for i in range(len(telescope_names)):
@@ -206,7 +201,8 @@ class AppendFiles():
             print('\n')
             
         #If the user has yet to convert the inputs to excel and append them    
-        except (FileExistsError, FileNotFoundError):
+        #except (FileExistsError, FileNotFoundError):
+        except NameError:
             print('Have you appended the inputs in excel?')
             print('\n')
             
@@ -403,12 +399,10 @@ class AppendFiles():
                 #plotting parameter inputs (hard coded from LAT model)
                 params = ['band_centers','beam_sizes','Sensitivities','f_knees','Cs','alpha_temp',
                    'survey_time','f_sky','ret_after_obs_cuts','non_uniformity_param','ell_max','ell_pivot',
-                          'delta_ell','alpha_pol','NTubes_LF','NTubes_MF','NTubes_UHF','model_num']
+                          'delta_ell','alpha_pol','NTubes','model_num']
 
                 #Hard coded from LAT model
-                default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],[48.,24.,5.4,6.7,15.,36.],
-                                                         [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],
-                                                         -3.5,5.,0.4,0.2,0.85,1e4,1000.,5,0.4,1,4,2,0]}
+                default_values = {'LAT Model Parameters':[[27.,39.,93.,145.,225.,280.],[7.4,5.1,2.2,1.4,1.0,0.9],[48.,24.,5.4,6.7,15.,36.], [700.,700.,700.,700.,700.,700.],[200,7.7,1800,12000,68000,124000],[-3.5,-3.5,-3.5,-3.5,-3.5,-3.5], 5., 0.4, 0.2,0.85,1e4,[1000.,1000.,1000.,1000.,1000.,1000.],1,[-0.4,-0.4,-0.4,-0.4,-0.4,-0.4],[1,1,1,1,1,1],1]}
 
                 #store the previous LAT model parameters in a dataframe  and write to the master sheet
                 plot_params = pd.DataFrame(default_values,index=params)

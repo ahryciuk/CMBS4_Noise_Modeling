@@ -15,26 +15,35 @@ import os as os
 #number of tubes per camera?
 
 
-def S4_noise(band_centers=[27.,39.,93.,145.,225.,280.], beam_sizes=[7.4,5.1,2.2,1.4,1.0,0.9], Sens=[48.,24.,5.4,6.7,15.,36.], ell_max=1e4, f_knees=[700.,700.,700.,700.,700.,700.], Cs=[200,7.7,1800,12000,68000,124000], alpha_temp=[-3.5,-3.5,-3.5,-3.5,-3.5,-3.5], survey_time=5., f_sky=0.4, ret_after_obs_cuts=0.2, non_uniformity_param=0.85, ell_pivot=[1000.,1000.,1000.,1000.,1000.,1000.],delta_ell=5,alpha_pol=[0.4,0.4,0.4,0.4,0.4,0.4],NTubes_LF=1, NTubes_MF=4,NTubes_UHF=2,model_num=0):
+def S4_noise(band_centers=[27.,39.,93.,145.,225.,280.], beam_sizes=[7.4,5.1,2.2,1.4,1.0,0.9], Sens=[48.,24.,5.4,6.7,15.,36.], ell_max=1e4, f_knees=[700.,700.,700.,700.,700.,700.], Cs=[200,7.7,1800,12000,68000,124000], alpha_temp=[-3.5,-3.5,-3.5,-3.5,-3.5,-3.5], survey_time=5., f_sky=0.4, ret_after_obs_cuts=0.2, non_uniformity_param=0.85, ell_pivot=[1000.,1000.,1000.,1000.,1000.,1000.],delta_ell=1,alpha_pol=[-0.4,-0.4,-0.4,-0.4,-0.4,-0.4],NTubes=[1,1,1,1,1,1],model_num=1):
     
     print("band centers: ", band_centers, "[GHz]")
     print("beam sizes: "  , beam_sizes, "[arcmin]")
    
-    NTubes = []
-    sect = len(band_centers)/3
-    for i in range(len(band_centers)):
-        if i < len(band_centers)/3:
-            NTubes.append(NTubes_LF)
-        elif i >= len(band_centers)/3 and i < 2*len(band_centers)/3:
-            NTubes.append(NTubes_MF)
-        else:
-            NTubes.append(NTubes_UHF)
+    #NTubes = []
+    #sect = len(band_centers)/3
+    #for i in range(len(band_centers)):
+    #    if i < len(band_centers)/3:
+    #        NTubes.append(NTubes_LF)
+    #    elif i >= len(band_centers)/3 and i < 2*len(band_centers)/3:
+    #        NTubes.append(NTubes_MF)
+    #    else:
+    #        NTubes.append(NTubes_UHF)
     
     # sensitivity in uK*sqrt(s)
     # set noise to irrelevantly high value when NTubes=0
 
+    #input error checking
     assert(f_sky > 0 and f_sky <= 1.)
     assert(model_num in [0,1])
+    assert(len(band_centers) == len(beam_sizes))
+    assert(len(beam_sizes) == len(Sens))
+    assert(len(Sens) == len(f_knees))
+    assert(len(f_knees) == len(Cs))
+    assert(len(Cs) == len(alpha_temp))
+    assert(len(alpha_temp) == len(ell_pivot))
+    assert(len(ell_pivot) == len(alpha_pol))
+    assert(len(alpha_pol) == len(NTubes))
     
     ####################################################################
     ## calculate the survey area and time
@@ -64,7 +73,7 @@ def S4_noise(band_centers=[27.,39.,93.,145.,225.,280.], beam_sizes=[7.4,5.1,2.2,
         
         #Atacama model
         if not model_num:
-            AN_T.append(Cs[i] * (ell/ell_pivot[i])**alpha_temp[i] * A_SR / t / (50*2.*NTubes[i]) )
+            AN_T.append(Cs[i] * (ell/ell_pivot[i])**alpha_temp[i] * A_SR / t / (2.*NTubes[i]) )
         
         #Changed normalization to line up with comp. sep. code---Ask Jeff maybe reflects SO not SP
         #SP model
@@ -239,7 +248,7 @@ def S4_noise(band_centers=[27.,39.,93.,145.,225.,280.], beam_sizes=[7.4,5.1,2.2,
 #                N_ell_P_LA[(freq1,freq2)] = np.zeros(len(ell))
          
   
-    return(ell, N_ell_T_LA, N_ell_P_LA, Map_white_noise_levels)
+    return(ell, N_ell_T_LA, N_ell_P_LA, Map_white_noise_levels,corr_freq)
 
 
 
