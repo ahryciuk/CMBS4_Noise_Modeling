@@ -236,5 +236,15 @@ class systematics():
         
         return nl_dic
     
+    def inv_var_weight_nl(self, freq_bands, nl_dic, which_spectra):
+        
+        nl_inv_var_dic = {}
+        for freq1 in freq_bands:
+            nl_inv_var_dic[which_spectra] += 1. / nl_dic[(freq1,freq1)]
+            
+        nl_inv_var_dic[which_spectra] = 1. / nl_inv_var_dic[which_spectra]
+        
+        return nl_inv_var_dic
+    
     
     

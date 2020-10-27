@@ -15,8 +15,9 @@ def fisher(paramfile, which_spectra,
     import json
     os.chdir(cwd + '/ilc_modules')
     from Systematics import systematics
-    #sys.path.append('modules')
     import tools
+    param_dict = misc.fn_get_param_dict('params.ini')
+    os.chdir(cwd)
     
     """
     #CMB fisher forecasting
@@ -28,9 +29,7 @@ def fisher(paramfile, which_spectra,
     assert which_spectra in ('unlensed_scalar', 'lensed_scalar'),"Input either unlensed_scalar or lensed_scalar"
     
     #two parameter files
-    os.chdir(cwd + '/ilc_modules')
-    param_dict = misc.fn_get_param_dict('params.ini')
-    os.chdir(cwd)
+    
     
     #paramfile
     #which_spectra choose from ['lensed_scalar', 'unlensed_scalar']
@@ -51,6 +50,7 @@ def fisher(paramfile, which_spectra,
     #nl_dic = get_nl_from_cl_residuals(cl_residual, ell)
     bl_dic = get_bl_dic(freq_bands, fwhm_bands, ell)
     
+    #BUG: the f3db_beams and pct_unc_lpf is used to turn on beam_syst but must be none. When it is passed as None here an error is thrown
     #check if inputs are strings
     if type(freq_bands[0]) is str:
         freq_bands = json.loads(freq_bands)
@@ -145,6 +145,10 @@ def fisher(paramfile, which_spectra,
     param_step_size_dic = {'As':0.1e-9,'mnu':0.02,'Neff':0.08,'ns':0.01,'ombh2':0.0008,'omch2':0.003,'tau':0.02,'thetastar':0.00005}    
     cl_deriv_dic = get_cmb_derivs_dic(ell, which_spectra, param_step_size_dic)    
     
+    for param in param_names:
+        if param == 'As':
+            for TP in ['TT','EE','TE']:
+                cl_deriv_dic[param][TP] = 1e-9*cl_deriv_dic[param][TP]
     ############################################################################################################
     #time constant transfer function error
     
@@ -169,9 +173,11 @@ def fisher(paramfile, which_spectra,
         pct_diff = np.sqrt(pct_diff_avg)
 
         #output power spectra will either be enhanced or suppressed due to uncertainty in detector time constant
+        #BUG: The two arrays need to be the same length. Only multiply up to a point?
         for TP in cl_dic.keys():
             cl_dic[TP] = cl_dic[TP] * (1. + pct_diff)
-            cl_deriv_dic['ell'][TP] = cl_deriv_dic['ell'][TP] * (1. + pct_diff)
+            for param in param_names:
+                cl_deriv_dic[param][TP] = cl_deriv_dic[param][TP] * (1. + pct_diff)
             
         #new cl_dic with shifted peak due to pct_diff? so can subtract later
     
@@ -222,7 +228,9 @@ def fisher(paramfile, which_spectra,
        
     
     
-    #up to here the nl_dic is normal nl spectra and needs to be converted to cl_residual 
+    #up to here the nl_dic is normal nl spectra and needs to be converted to cl_residual
+    
+    #BUG: Only need this if adding systematics, the previous nl_dic is represented by the cl_residuals
     if nl_dic is not None:
         cl_residual = recalculate_cl_residual(freq_bands, ell, nl_dic, bl_dic)
     
@@ -540,7 +548,7 @@ def get_bl_dic(freq_bands, beam_sizes, ell):
 
 def calculate_cmb(H0=None, ombh2=0.0222, omch2=0.1197, mnu=0.06, omk=0, 
                     tau=0.06, As=2.196e-9, ns=0.9655, r=0, lmax=5000, max_l_tensor=5000,
-                    lens_potential_accuracy =0, thetastar=0.010409,Alens=1, 
+                    lens_potential_accuracy = 1, thetastar=0.010409,Alens=1, 
                     Neff = 3.046):
     import numpy as np
     import camb
@@ -550,7 +558,7 @@ def calculate_cmb(H0=None, ombh2=0.0222, omch2=0.1197, mnu=0.06, omk=0,
     # initialize camb parameter, no tensor here
     pars = camb.CAMBparams()
     pars.set_cosmology(H0=H0, ombh2=ombh2, omch2=omch2, mnu=mnu, omk=omk, 
-                       tau=tau, nnu=3.046, thetastar=thetastar, Alens=Alens)
+                       tau=tau, nnu=Neff, thetastar=thetastar, Alens=Alens)
     pars.num_nu_massless = Neff
     #no tensor yet, set r=0 here, calculate inflation B mode separately
     pars.InitPower.set_params(As=As, ns=ns, r=0)
