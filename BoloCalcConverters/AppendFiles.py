@@ -539,7 +539,7 @@ class AppendFiles():
 
         #For optical_power.txt the column header is the second row of text for all cameras
         col_header = f_opt_pow[1].split('|')
-        col_header = col_header[1:5]
+        col_header = col_header[1:-1]
         for i in range(0,len(col_header)):
             col_header[i] = col_header[i].strip(' ')
 
