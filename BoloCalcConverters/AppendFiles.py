@@ -421,7 +421,7 @@ class AppendFiles():
                             if filelist[k] == 'output.txt':
                                 path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
                                 name_in = 'output.txt'
-                                name_out = 'output' + '_' + camera_names[i][j] + '.xls'
+                                name_out = 'output' + '_' + telescope_names[i] + '_' + camera_names[i][j] + '.xls'
                                 path_out = exp_dir# + '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
                                 data = self.ConvertOuttoExcel(path_in, path_out, name_in, name_out)
                                 path_out = exp_dir# + '/' + 'OutputExcelFiles'
@@ -430,7 +430,7 @@ class AppendFiles():
                             elif filelist[k] == 'optical_power.txt':
                                 path_in = exp_dir + '/' + telescope_names[i] + '/' + camera_names[i][j]
                                 name_in = 'optical_power.txt'
-                                name_out = 'optical_power' + '_' + camera_names[i][j] + '.xls'
+                                name_out = 'optical_power' + '_' + telescope_names[i] + '_' + camera_names[i][j] + '.xls'
                                 path_out = exp_dir# +  '/' + 'OutputExcelFiles' + '/' + telescope_names[i] + '/' + camera_names[i][j]
                                 data = self.ConvertOptPowtoExcel(path_in, path_out, name_in, name_out)
                                 path_out = exp_dir# + '/' + 'OutputExcelFiles'
