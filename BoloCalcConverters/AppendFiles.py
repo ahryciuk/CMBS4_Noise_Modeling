@@ -181,7 +181,7 @@ class AppendFiles():
             for i in range(len(telescope_names)):
                 for dirName, subdirList, fileList in os.walk(exp_dir + '/' + telescope_names[i] + '/' + 'config'):
                     for k in range(len(fileList)):
-                        if fileList[k] == 'telescopt.txt':
+                        if fileList[k] == 'telescope.txt':
                             output_file_name = fileList[k]
                             output_path = exp_dir + '/' + telescope_names[i] + '/' + 'config'
                             sheet_name = fileList[k].rstrip('.txt') + '_' + telescope_names[i]
